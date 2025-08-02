@@ -10,10 +10,11 @@
       overflow: hidden;
       font-family: 'Segoe UI', sans-serif;
     }
+
     .photo {
       position: absolute;
-      width: 300px;
-      height: 300px;
+      width: 240px;
+      height: 240px;
       border-radius: 16px;
       object-fit: cover;
       opacity: 0;
@@ -21,7 +22,11 @@
       box-shadow: 0 4px 12px rgba(0,0,0,0.3);
       z-index: 3;
     }
-    .fade-in { opacity: 1; }
+
+    .fade-in {
+      opacity: 1;
+    }
+
     .message {
       position: absolute;
       top: 50%;
@@ -34,83 +39,113 @@
       white-space: pre-wrap;
       z-index: 4;
     }
-    canvas { position: fixed; top: 0; left: 0; pointer-events: none; z-index: 1; }
+
+    #cover {
+      cursor: pointer;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: #fff;
+      padding: 40px;
+      border-radius: 20px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.2);
+      z-index: 5;
+      text-align: center;
+    }
+
+    canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      pointer-events: none;
+      z-index: 1;
+    }
   </style>
 </head>
 <body>
 
+<!-- Cover -->
+<div id="cover" onclick="startGreeting()">
+  <h2 style="color: #d6336c;">🎁 Bấm để mở thiệp mừng sinh nhật 🎉</h2>
+</div>
+
+<!-- Ảnh -->
 <img src="image/ba-ngoai-1.jpg" id="photo1" class="photo">
 <img src="image/ba-ngoai-2.jpg" id="photo2" class="photo">
 <img src="image/ba-ngoai-3.jpg" id="photo3" class="photo">
 <img src="image/ba-ngoai-4.jpg" id="photo4" class="photo">
 
+<!-- Lời chúc -->
 <div class="message" id="message"></div>
 
-<audio id="birthdayMusic" autoplay loop>
+<!-- Nhạc -->
+<audio id="birthdayMusic" preload="auto" loop>
   <source src="song/happy-birthday.mp3" type="audio/mpeg">
 </audio>
 
+<!-- Pháo hoa & bóng bay -->
 <canvas id="fireworks"></canvas>
 <canvas id="balloons"></canvas>
 
 <script>
-    //=== Photo ====
- const photos = [
-  document.getElementById('photo1'),
-  document.getElementById('photo2'),
-  document.getElementById('photo3'),
-  document.getElementById('photo4')
-];
+  const photos = [
+    document.getElementById('photo1'),
+    document.getElementById('photo2'),
+    document.getElementById('photo3'),
+    document.getElementById('photo4'),
+  ];
 
-// Kích thước ảnh
-const photoWidth = 300;
-const photoHeight = 300;
+  const photoWidth = 240;
+  const photoHeight = 240;
 
-// Khu vực trung tâm cần tránh (lời chúc)
-const centerBox = {
-  x: window.innerWidth / 2 - 200,
-  y: window.innerHeight / 2 - 150,
-  width: 400,
-  height: 300
-};
+  const centerBox = {
+    x: window.innerWidth / 2 - 250,
+    y: window.innerHeight / 2 - 180,
+    width: 500,
+    height: 360
+  };
 
-const placedRects = [];
+  const placedRects = [];
 
-function isOverlapping(r1, r2) {
-  return !(r1.x + r1.width < r2.x ||
-           r2.x + r2.width < r1.x ||
-           r1.y + r1.height < r2.y ||
-           r2.y + r2.height < r1.y);
-}
-
-function generateNonOverlappingPosition() {
-  let tries = 0;
-  while (tries < 1000) {
-    const x = Math.floor(Math.random() * (window.innerWidth - photoWidth));
-    const y = Math.floor(Math.random() * (window.innerHeight - photoHeight));
-    const rect = { x, y, width: photoWidth, height: photoHeight };
-
-    // Không chồng lên lời chúc hoặc ảnh khác
-    const overlaps = placedRects.some(r => isOverlapping(r, rect)) || isOverlapping(centerBox, rect);
-
-    if (!overlaps) {
-      placedRects.push(rect);
-      return { x, y };
-    }
-    tries++;
+  function isOverlapping(r1, r2) {
+    return !(r1.x + r1.width < r2.x ||
+             r2.x + r2.width < r1.x ||
+             r1.y + r1.height < r2.y ||
+             r2.y + r2.height < r1.y);
   }
-  return { x: 0, y: 0 }; // fallback
-}
 
-photos.forEach((img, index) => {
-  const pos = generateNonOverlappingPosition();
-  img.style.left = `${pos.x}px`;
-  img.style.top = `${pos.y}px`;
-  setTimeout(() => img.classList.add('fade-in'), 500 + index * 800);
-});
+  function generateNonOverlappingPosition() {
+    let tries = 0;
+    while (tries < 3000) {
+      const x = Math.floor(Math.random() * (window.innerWidth - photoWidth));
+      const y = Math.floor(Math.random() * (window.innerHeight - photoHeight));
+      const rect = { x, y, width: photoWidth, height: photoHeight };
 
-  // Hiệu ứng typing message
-  const msgText = "🎉 Chúc mừng sinh nhật bà💐\nChúc bà luôn mạnh khỏe 💪\nSống vui sống khỏe bên con cháu ❤️\n🥰";
+      const overlaps = placedRects.some(r => isOverlapping(r, rect)) || isOverlapping(centerBox, rect);
+
+      if (!overlaps) {
+        placedRects.push(rect);
+        return { x, y };
+      }
+      tries++;
+    }
+    return {
+      x: Math.floor(Math.random() * (window.innerWidth - photoWidth)),
+      y: Math.floor(Math.random() * (window.innerHeight - photoHeight))
+    };
+  }
+
+  function showPhotosRandomly() {
+    photos.forEach((img, index) => {
+      const pos = generateNonOverlappingPosition();
+      img.style.left = `${pos.x}px`;
+      img.style.top = `${pos.y}px`;
+      setTimeout(() => img.classList.add('fade-in'), 500 + index * 800);
+    });
+  }
+
+  const msgText = "🎉 Chúc mừng sinh nhật bà 💐\n👵Chúc bà luôn mạnh khỏe 💪\n😘Chúc bà tuổi mới có thể nhiều sức khỏe🎂\n🥰Chúc bà sống vui, khỏe thật lâu cùng con cháu.❤️\n";
   const msgEl = document.getElementById('message');
   let mIndex = 0;
   function typeText(){
@@ -121,22 +156,14 @@ photos.forEach((img, index) => {
     }
   }
 
-  window.onload = () => {
-  document.getElementById('birthdayMusic').play();
-  // Gõ từ từ lời chúc
-  setTimeout(typeText, 2500);
-
-  // Hiệu ứng pháo hoa + bóng bay
-  launchFireworks();
-  startBalloons();
-  };
-
-  window.addEventListener('resize', () => {
-  fwC.width = window.innerWidth;
-  fwC.height = window.innerHeight;
-  bC.width = window.innerWidth;
-  bC.height = window.innerHeight;
-});
+  function startGreeting() {
+    document.getElementById('cover').style.display = 'none';
+    showPhotosRandomly();
+    typeText();
+    launchFireworks();
+    startBalloons();
+    document.getElementById('birthdayMusic')?.play().catch(()=>{});
+  }
 
   // ==== Fireworks ====
   const fwC = document.getElementById('fireworks'), fw = fwC.getContext('2d');
@@ -163,7 +190,7 @@ photos.forEach((img, index) => {
   }
   function launchFireworks(){ setInterval(createFW,1000); drawFW(); }
 
-  // ==== Bóng bay nền (canvas) ====
+  // ==== Balloons ====
   const bC = document.getElementById('balloons'), bCtx = bC.getContext('2d');
   bC.width = window.innerWidth; bC.height = window.innerHeight;
   const bs = [];
@@ -186,6 +213,10 @@ photos.forEach((img, index) => {
     requestAnimationFrame(drawB);
   }
   function startBalloons(){ createB(); setInterval(createB,3000); drawB(); }
+
+  window.onload = () => {
+    document.getElementById('birthdayMusic')?.load();
+  };
 </script>
 
 </body>
