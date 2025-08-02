@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Chúc mừng sinh nhật bà ngoại</title>
+  <style>
+    body {
+      margin: 1;
+      background: linear-gradient(to right, #fff0f5, #ffe0e6);
+      overflow: hidden;
+      font-family: 'Segoe UI', sans-serif;
+    }
+    .photo {
+      position: absolute;
+      width: 300px;
+      height: 300px;
+      border-radius: 16px;
+      object-fit: cover;
+      opacity: 0;
+      transition: opacity 2s ease;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      z-index: 3;
+    }
+    .fade-in { opacity: 1; }
+    .message {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 28px;
+      font-weight: bold;
+      color: #d6336c;
+      text-align: center;
+      white-space: pre-wrap;
+      z-index: 4;
+    }
+    canvas { position: fixed; top: 0; left: 0; pointer-events: none; z-index: 1; }
+  </style>
+</head>
+<body>
+
+<img src="image/ba-ngoai-1.jpg" id="photo1" class="photo">
+<img src="image/ba-ngoai-2.jpg" id="photo2" class="photo">
+<img src="image/ba-ngoai-3.jpg" id="photo3" class="photo">
+<img src="image/ba-ngoai-4.jpg" id="photo4" class="photo">
+
+<div class="message" id="message"></div>
+
+<audio id="birthdayMusic" autoplay loop>
+  <source src="song/happy-birthday.mp3" type="audio/mpeg">
+</audio>
+
+<canvas id="fireworks"></canvas>
+<canvas id="balloons"></canvas>
+
+<script>
+    //=== Photo ====
+ const photos = [
+  document.getElementById('photo1'),
+  document.getElementById('photo2'),
+  document.getElementById('photo3'),
+  document.getElementById('photo4')
+];
+
+// Kích thước ảnh
+const photoWidth = 300;
+const photoHeight = 300;
+
+// Khu vực trung tâm cần tránh (lời chúc)
+const centerBox = {
+  x: window.innerWidth / 2 - 200,
+  y: window.innerHeight / 2 - 150,
+  width: 400,
+  height: 300
+};
+
+const placedRects = [];
+
+function isOverlapping(r1, r2) {
+  return !(r1.x + r1.width < r2.x ||
+           r2.x + r2.width < r1.x ||
+           r1.y + r1.height < r2.y ||
+           r2.y + r2.height < r1.y);
+}
+
+function generateNonOverlappingPosition() {
+  let tries = 0;
+  while (tries < 1000) {
+    const x = Math.floor(Math.random() * (window.innerWidth - photoWidth));
+    const y = Math.floor(Math.random() * (window.innerHeight - photoHeight));
+    const rect = { x, y, width: photoWidth, height: photoHeight };
+
+    // Không chồng lên lời chúc hoặc ảnh khác
+    const overlaps = placedRects.some(r => isOverlapping(r, rect)) || isOverlapping(centerBox, rect);
+
+    if (!overlaps) {
+      placedRects.push(rect);
+      return { x, y };
+    }
+    tries++;
+  }
+  return { x: 0, y: 0 }; // fallback
+}
+
+photos.forEach((img, index) => {
+  const pos = generateNonOverlappingPosition();
+  img.style.left = `${pos.x}px`;
+  img.style.top = `${pos.y}px`;
+  setTimeout(() => img.classList.add('fade-in'), 500 + index * 800);
+});
+
+  // Hiệu ứng typing message
+  const msgText = "🎉 Chúc mừng sinh nhật bà💐\nChúc bà luôn mạnh khỏe 💪\nSống vui sống khỏe bên con cháu ❤️\n🥰";
+  const msgEl = document.getElementById('message');
+  let mIndex = 0;
+  function typeText(){
+    if(mIndex < msgText.length){
+      msgEl.innerHTML += msgText.charAt(mIndex);
+      mIndex++;
+      setTimeout(typeText, 50);
+    }
+  }
+
+  window.onload = () => {
+  document.getElementById('birthdayMusic').play();
+  // Gõ từ từ lời chúc
+  setTimeout(typeText, 2500);
+
+  // Hiệu ứng pháo hoa + bóng bay
+  launchFireworks();
+  startBalloons();
+  };
+
+  window.addEventListener('resize', () => {
+  fwC.width = window.innerWidth;
+  fwC.height = window.innerHeight;
+  bC.width = window.innerWidth;
+  bC.height = window.innerHeight;
+});
+
+  // ==== Fireworks ====
+  const fwC = document.getElementById('fireworks'), fw = fwC.getContext('2d');
+  fwC.width = window.innerWidth; fwC.height = window.innerHeight;
+  const fireworks = [];
+  function random(a,b){return Math.random()*(b-a)+a;}
+  function createFW(){
+    const x = random(100, fwC.width-100), y = random(100, fwC.height/2), parts=[];
+    for(let i=0;i<50;i++){
+      const ang = 2*Math.PI*i/50, sp = random(2,5);
+      parts.push({x,y,dx:Math.cos(ang)*sp,dy:Math.sin(ang)*sp,life:100,color:`hsl(${Math.floor(random(0,360))},100%,60%)`});
+    }
+    fireworks.push(...parts);
+  }
+  function drawFW(){
+    fw.clearRect(0,0,fwC.width,fwC.height);
+    fireworks.forEach((p,i)=>{
+      p.x+=p.dx; p.y+=p.dy; p.life--;
+      fw.fillStyle = p.color;
+      fw.beginPath(); fw.arc(p.x,p.y,2,0,2*Math.PI); fw.fill();
+      if(p.life<=0) fireworks.splice(i,1);
+    });
+    requestAnimationFrame(drawFW);
+  }
+  function launchFireworks(){ setInterval(createFW,1000); drawFW(); }
+
+  // ==== Bóng bay nền (canvas) ====
+  const bC = document.getElementById('balloons'), bCtx = bC.getContext('2d');
+  bC.width = window.innerWidth; bC.height = window.innerHeight;
+  const bs = [];
+  function createB(){
+    for(let i=0;i<20;i++) bs.push({
+      x: random(0,bC.width), y: bC.height+random(0,200), r: 20+random(0,10),
+      col:`hsl(${random(0,360)},80%,60%)`, sp:1+random(0,2), dx:random(-0.5,0.5)
+    });
+  }
+  function drawB(){
+    bCtx.clearRect(0,0,bC.width,bC.height);
+    bs.forEach((b,i)=>{
+      b.y-=b.sp; b.x+=b.dx;
+      bCtx.beginPath(); bCtx.arc(b.x,b.y,b.r,0,2*Math.PI);
+      bCtx.fillStyle=b.col; bCtx.fill();
+      bCtx.beginPath(); bCtx.moveTo(b.x,b.y+b.r);
+      bCtx.lineTo(b.x,b.y+b.r+20); bCtx.strokeStyle='#555'; bCtx.stroke();
+      if(b.y+b.r<0) bs.splice(i,1);
+    });
+    requestAnimationFrame(drawB);
+  }
+  function startBalloons(){ createB(); setInterval(createB,3000); drawB(); }
+</script>
+
+</body>
+</html>
